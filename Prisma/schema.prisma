@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Representa as peças físicas disponíveis no estoque da loja
+model Component {
+  id             String        @id @default(uuid())
+  name           String
+  type           ComponentType
+  price          Float         // Preço unitário da peça
+  stockQuantity  Int           @default(0)
+  
+  // Atributos Técnicos para Validação de Compatibilidade
+  socket         String?       // Ex: "AM5", "LGA1700" (Para CPU e Placa-Mãe)
+  ramType        String?       // Ex: "DDR4", "DDR5" (Para RAM e Placa-Mãe)
+  powerDrawW     Int?          // Consumo estimado em Watts (Para CPU, GPU, etc.)
+  powerSupplyW   Int?          // Potência fornecida em Watts (Apenas para Fontes/PSU)
+  
+  // Relacionamentos
+  budgetItems    BudgetItem[]
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("components")
+}
+
+/// Representa um orçamento de montagem de PC personalizado gerado para um cliente
+model Budget {
+  id           String        @id @default(uuid())
+  customerName String
+  laborPrice   Float         @default(150.0) // Taxa de montagem padrão
+  totalPrice   Float         // Valor total recalculado (Soma das peças + montagem)
+  status       BudgetStatus  @default(PENDING)
+  
+  // Relacionamentos
+  items        BudgetItem[]
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("budgets")
+}
+
+/// Tabela intermediária de relacionamento N:N entre orçamentos e peças
+model BudgetItem {
+  id          String    @id @default(uuid())
+  quantity    Int       @default(1)
+  
+  // Chaves estrangeiras e relações
+  budgetId    String
+  budget      Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  
+  componentId String
+  component   Component @relation(fields: [componentId], references: [id])
+
+  // Impede que a mesma peça seja adicionada em duplicidade na lista (em vez disso, incrementa-se a quantidade)
+  @@unique([budgetId, componentId])
+  @@map("budget_items")
+}
+
+enum ComponentType {
+  CPU
+  GPU
+  MOTHERBOARD
+  RAM
+  PSU
+  STORAGE
+  CABINET
+}
+
+enum BudgetStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  CANCELED
+}

@@ -1,57 +1,34 @@
-
-               {
-              
-
-             
-
-                 "compilerOptions": {
-              
-
-             
-
-                   "target": "esnext",
-              
-
-             
-
-                   "module": "nodenext",
-              
-
-             
-
-                   "rewriteRelativeImportExtensions": true,
-              
-
-             
-
-                   "erasableSyntaxOnly": true,
-              
-
-             
-
-                   "verbatimModuleSyntax": true,
-              
-
-             
-
-                   "noEmit": true,
-              
-
-             
-
-                   "strict": true,
-              
-
-             
-
-                   "skipLibCheck": true
-              
-
-             
-
-                 }
-              
-
-             
-
-               }
+{
+  "compilerOptions": {
+    /* Destino da Compilação e Ambiente de Execução */
+    "target": "ES2022",                          /* Compila para código JS moderno e eficiente */
+    "module": "NodeNext",                        /* Padrão robusto para ecossistema Node.js [1, 2] */
+    "moduleResolution": "NodeNext",                  /* Resolve módulos baseado na lógica do Node.js */
+    
+    /* Configurações de Entrada e Saída */
+    "rootDir": "./src",                          /* Onde estão seus códigos fonte em TS [1] */
+    "outDir": "./dist",                          /* Pasta de saída para os arquivos compilados [2] */
+    "removeComments": true,                      /* Remove comentários no build final para reduzir tamanho */
+    
+    /* Regras de Máxima Rigidez (Type-Checking Seguro) */
+    "strict": true,                              /* Ativa todas as checagens estritas do TypeScript [1, 2] */
+    "noImplicitAny": true,                       /* Impede o compilador de aceitar implicitamente o tipo 'any' */
+    "strictNullChecks": true,                    /* Garante que 'null' e 'undefined' sejam explicitamente validados [5] */
+    "strictFunctionTypes": true,                 /* Checagem rigorosa de tipos de funções e seus parâmetros */
+    "noImplicitThis": true,                      /* Levanta erro se a palavra-chave 'this' não tiver tipo definido */
+    "alwaysStrict": true,                        /* Emite 'use strict' em todos os arquivos de saída JS */
+    
+    /* Regras Adicionais para Qualidade de Código */
+    "noUnusedLocals": true,                      /* Reporta erro para variáveis locais que foram declaradas mas nunca usadas */
+    "noUnusedParameters": true,                  /* Reporta erro para parâmetros de funções não utilizados */
+    "noImplicitReturns": true,                   /* Garante que todos os caminhos de uma função retornem um valor coerente */
+    "noFallthroughCasesInSwitch": true,          /* Evita a passagem não intencional de um switch/case sem break */
+    
+    /* Interoperabilidade e Performance */
+    "esModuleInterop": true,                     /* Permite importações amigáveis de módulos CommonJS no formato ES6 [1, 2] */
+    "skipLibCheck": true,                        /* Ignora a verificação de tipos dentro dos arquivos de biblioteca do node_modules [1] */
+    "forceConsistentCasingInFileNames": true     /* Garante consistência de caixa alta/baixa ao importar arquivos */
+  },
+  "include": ["src/**/*"],                       /* Garante que o compilador examine toda a pasta src */
+  "exclude": ["node_modules", "dist"]            /* Não compila o que está na pasta de pacotes ou builds antigos */
+}
