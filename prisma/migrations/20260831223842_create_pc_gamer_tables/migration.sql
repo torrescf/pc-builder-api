@@ -35,7 +35,7 @@ CREATE TABLE "budgets" (
 );
 
 -- CreateTable
-CREATE TABLE "budge+t_items" (
+CREATE TABLE "budget_items" (
     "id" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 1,
     "budgetId" TEXT NOT NULL,

@@ -1,45 +1,27 @@
+import 'express-async-errors';
+import express from 'express';
+import dotenv from 'dotenv';
 
-             
+import { errorMiddleware } from './middlewares/error';
+import componentRoutes from './routes/component.routes';
+dotenv.config();
 
-               import express, { type Express, type Request, type Response } from 'express';
-              
+const app = express();
 
-             
+const PORT = process.env.API_PORT ?? 3000;
 
+app.use(express.json());
 
-              
+app.get('/', (_req, res) => {
+  res.json({
+    message: 'PC Gamer API funcionando!',
+  });
+});
 
-             
+app.use(componentRoutes);
 
-               const app: Express = express();
-              
+app.use(errorMiddleware);
 
-             
-
-
-              
-
-             
-
-               app.get('/', (_req: Request, res: Response) => {
-              
-
-             
-
-                 res.send('Hello World!');
-              
-
-             
-
-               });
-              
-
-             
-
-
-              
-
-             
-
-               app.listen(3000);
-              
+app.listen(PORT, () => {
+  console.log(`🚀 API rodando na porta ${PORT}`);
+});
