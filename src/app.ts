@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 import { errorMiddleware } from './middlewares/error';
 import componentRoutes from './routes/component.routes';
+import budgetRoutes from './routes/budget.routes';
 dotenv.config();
 
 const app = express();
@@ -19,6 +20,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use(componentRoutes);
+app.use(budgetRoutes);
 
 app.use(errorMiddleware);
 

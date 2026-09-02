@@ -5,9 +5,9 @@ import { APIError } from '../helpers/api-errors';
 
 export const errorMiddleware = (
   error: Error & Partial<APIError>,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   // Erros de validação do Zod
   if (error instanceof ZodError) {

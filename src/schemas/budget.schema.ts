@@ -46,3 +46,4 @@ export type UpdateComponentInput = z.infer<typeof updateComponentSchema>;
 // Inferência de tipos TS automáticos a partir do Zod [46]
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type CreateComponentInput = z.infer<typeof createComponentSchema>;
+export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
