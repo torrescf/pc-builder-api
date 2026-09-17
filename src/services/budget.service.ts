@@ -11,8 +11,11 @@ import {
 } from '../helpers/api-errors';
 import { ComponentType, BudgetStatus } from '@prisma/client';
 
-export async function getAllBudgets() {
+export async function getAllBudgets(userId: string) {
   return prisma.budget.findMany({
+    where: {
+      userId,
+    },
     include: {
       items: {
         include: {

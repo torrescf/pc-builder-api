@@ -8,13 +8,16 @@ import {
   deleteBudget,
 } from '../services/budget.service';
 
-import { createBudgetSchema, updateBudgetSchema } from '../schemas/budget.schema';
+import {
+  createBudgetSchema,
+  updateBudgetSchema,
+} from '../schemas/budget.schema';
 
 export async function getBudgets(
-  _req: Request,
+  req: Request,
   res: Response
 ) {
-  const budgets = await getAllBudgets();
+  const budgets = await getAllBudgets(req.user!.id);
 
   return res.json(budgets);
 }
