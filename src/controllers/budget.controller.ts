@@ -28,7 +28,10 @@ export async function getBudget(
 ) {
   const { id } = req.params;
 
-  const budget = await getBudgetById(id);
+  const budget = await getBudgetById(
+    id,
+    req.user!.id,
+  );
 
   return res.json(budget);
 }
@@ -52,7 +55,11 @@ export async function updateBudgetController(
 
   const data = updateBudgetSchema.parse(req.body);
 
-  const budget = await updateBudget(id, data);
+  const budget = await updateBudget(
+    id,
+    data,
+    req.user!.id,
+  );
 
   return res.json(budget);
 }
@@ -63,7 +70,7 @@ export async function deleteBudgetController(
 ) {
   const { id } = req.params;
 
-  await deleteBudget(id);
+  await deleteBudget(id, req.user!.id);
 
   return res.status(204).send();
 }

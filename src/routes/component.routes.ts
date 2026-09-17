@@ -8,16 +8,29 @@ import {
   deleteComponentController,
 } from '../controllers/component.controller';
 
+import { roleMiddleware } from '../middlewares/auth';
+
 const router = Router();
 
-router.get('/components', getComponents);
+router.get('/', getComponents);
+router.get('/:id', getComponent);
 
-router.get('/components/:id', getComponent);
+router.post(
+  '/',
+  roleMiddleware(['ADMIN']),
+  createComponentController,
+);
 
-router.post('/components', createComponentController);
+router.patch(
+  '/:id',
+  roleMiddleware(['ADMIN']),
+  updateComponentController,
+);
 
-router.patch('/components/:id', updateComponentController);
-
-router.delete('/components/:id', deleteComponentController)
+router.delete(
+  '/:id',
+  roleMiddleware(['ADMIN']),
+  deleteComponentController,
+);
 
 export default router;

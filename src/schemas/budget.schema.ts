@@ -1,19 +1,14 @@
 import { z } from "zod";
 
 export const createBudgetSchema = z.object({
-  customerName: z
-    .string()
-    .min(2, "O nome do cliente precisa ter no mínimo 2 caracteres"),
-  componentIds: z
-    .array(z.string().uuid("ID de componente inválido"))
-    .min(1, "O orçamento precisa conter pelo menos 1 peça"),
-  assemblyFee: z
-    .number()
-    .nonnegative("A taxa de montagem não pode ser negativa")
-    .optional(),
+  componentIds: z.array(z.string()).min(1),
+  assemblyFee: z.number().nonnegative().optional(),
 });
 
-export const updateBudgetSchema = createBudgetSchema.partial();
+export const updateBudgetSchema = z.object({
+  componentIds: z.array(z.string()).min(1).optional(),
+  assemblyFee: z.number().nonnegative().optional(),
+});
 
 export const createComponentSchema = z.object({
   name: z.string().min(1, "O nome do componente é obrigatório"),

@@ -29,10 +29,11 @@ export async function getAllBudgets(userId: string) {
   });
 }
 
-export async function getBudgetById(id: string) {
-  const budget = await prisma.budget.findUnique({
+export async function getBudgetById(id: string, userId: string) {
+  const budget = await prisma.budget.findFirst({
     where: {
       id,
+      userId,
     },
     include: {
       items: {
@@ -52,8 +53,18 @@ export async function getBudgetById(id: string) {
 
 export async function createBudget(
   data: CreateBudgetInput,
-  userId?: string,
+  userId: string,
 ) {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundError('Usuário não encontrado');
+  }
+
   const componentIds = data.componentIds;
 
   const components = await prisma.component.findMany({
@@ -81,10 +92,10 @@ export async function createBudget(
 
   return prisma.budget.create({
     data: {
-      customerName: data.customerName,
+      customerName: user.name,
       laborPrice,
       totalPrice,
-      userId: userId ?? null,
+      userId,
       items: {
         create: componentIds.map((componentId) => ({
           componentId,
@@ -105,9 +116,13 @@ export async function createBudget(
 export async function updateBudget(
   budgetId: string,
   data: UpdateBudgetInput,
+  userId: string,
 ) {
-  const budget = await prisma.budget.findUnique({
-    where: { id: budgetId },
+  const budget = await prisma.budget.findFirst({
+    where: {
+      id: budgetId,
+      userId,
+    },
     include: {
       items: true,
     },
@@ -123,9 +138,6 @@ export async function updateBudget(
     return prisma.budget.update({
       where: { id: budgetId },
       data: {
-        ...(data.customerName !== undefined && {
-          customerName: data.customerName,
-        }),
         ...(data.assemblyFee !== undefined && {
           laborPrice: data.assemblyFee,
           totalPrice:
@@ -179,9 +191,6 @@ export async function updateBudget(
         id: budgetId,
       },
       data: {
-        ...(data.customerName !== undefined && {
-          customerName: data.customerName,
-        }),
         laborPrice,
         totalPrice,
         items: {
@@ -254,10 +263,14 @@ function validateCompatibility(components: any[]) {
   }
 }
 
-export async function deleteBudget(id: string) {
-  const budget = await prisma.budget.findUnique({
+export async function deleteBudget(
+  id: string,
+  userId: string,
+) {
+  const budget = await prisma.budget.findFirst({
     where: {
       id,
+      userId,
     },
   });
 
