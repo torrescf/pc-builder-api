@@ -42,7 +42,18 @@ export const createComponentSchema = z.object({
 export const updateComponentSchema = createComponentSchema.partial();
 
 export type UpdateComponentInput = z.infer<typeof updateComponentSchema>;
+export const updateBudgetStatusSchema = z.object({
+  status: z.enum([
+    "PENDING",
+    "APPROVED",
+    "COMPLETED",
+    "CANCELED",
+  ]),
+});
 
+export type UpdateBudgetStatusInput = z.infer<
+  typeof updateBudgetStatusSchema
+>;
 // Inferência de tipos TS automáticos a partir do Zod [46]
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type CreateComponentInput = z.infer<typeof createComponentSchema>;

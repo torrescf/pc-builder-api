@@ -10,10 +10,10 @@ import {
 
 const router = Router();
 
-router.get('/budgets', getBudgets);
-router.get('/budgets/:id', getBudget);
-router.post('/budgets', createBudgetController);
-router.patch('/budgets/:id', updateBudgetController);
-router.delete('/budget/:id', deleteBudgetController);
+router.get('/', getBudgets);
+router.get('/:id', getBudget);
+router.post('/', createBudgetController);
+router.patch('/:id', updateBudgetController);
+router.delete('/:id', deleteBudgetController);
 
 export default router;

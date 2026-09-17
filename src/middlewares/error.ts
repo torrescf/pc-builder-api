@@ -29,6 +29,7 @@ export const errorMiddleware = (
 
   if (statusCode === 500) {
     console.error('[Internal Server Error]:', error);
+    return res.status(500).json({error: error.message,})
   } else {
     console.warn(
       `[API Warning - Status ${statusCode}]: ${error.message}`

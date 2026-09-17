@@ -7,6 +7,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum ComponentType {
+  CPU
+  GPU
+  MOTHERBOARD
+  RAM
+  PSU
+  STORAGE
+  CABINET
+}
+
+enum BudgetStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  CANCELED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String   // Armazenado como Hash BCRYPT
+  role      Role     @default(CUSTOMER)
+  budgets   Budget[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
 /// Representa as peças físicas disponíveis no estoque da loja
 model Component {
   id             String        @id @default(uuid())
@@ -37,6 +72,9 @@ model Budget {
   laborPrice   Float         @default(150.0) // Taxa de montagem padrão
   totalPrice   Float         // Valor total recalculado (Soma das peças + montagem)
   status       BudgetStatus  @default(PENDING)
+
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   
   // Relacionamentos
   items        BudgetItem[]
@@ -64,19 +102,3 @@ model BudgetItem {
   @@map("budget_items")
 }
 
-enum ComponentType {
-  CPU
-  GPU
-  MOTHERBOARD
-  RAM
-  PSU
-  STORAGE
-  CABINET
-}
-
-enum BudgetStatus {
-  PENDING
-  APPROVED
-  COMPLETED
-  CANCELED
-}

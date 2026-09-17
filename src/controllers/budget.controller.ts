@@ -36,7 +36,7 @@ export async function createBudgetController(
 ) {
   const data = createBudgetSchema.parse(req.body);
 
-  const budget = await createBudget(data);
+  const budget = await createBudget(data, req.user!.id);
 
   return res.status(201).json(budget);
 }

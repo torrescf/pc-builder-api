@@ -1,7 +1,15 @@
 import { prisma } from '../lib/prisma';
-import { NotFoundError, BadRequestError } from '../helpers/api-errors';
-import { validateCompatibility } from './compatibility.service';
-import type { CreateBudgetInput, UpdateBudgetInput, } from '../schemas/budget.schema';
+import type {
+  CreateBudgetInput,
+  UpdateBudgetInput,
+  UpdateBudgetStatusInput,
+} from '../schemas/budget.schema';
+import {
+  NotFoundError,
+  OutOfStockError,
+  CompatibilityError,
+} from '../helpers/api-errors';
+import { ComponentType, BudgetStatus } from '@prisma/client';
 
 export async function getAllBudgets() {
   return prisma.budget.findMany({
@@ -39,34 +47,31 @@ export async function getBudgetById(id: string) {
   return budget;
 }
 
-export async function createBudget(data: CreateBudgetInput) {
+export async function createBudget(
+  data: CreateBudgetInput,
+  userId?: string,
+) {
+  const componentIds = data.componentIds;
+
   const components = await prisma.component.findMany({
     where: {
-      id: {
-        in: data.componentIds,
-      },
+      id: { in: componentIds },
     },
   });
- 
-  
 
-  if (components.length !== data.componentIds.length) {
-    throw new NotFoundError('Um ou mais componentes não foram encontrados');
+  if (components.length !== componentIds.length) {
+    throw new NotFoundError(
+      'Um ou mais componentes selecionados não foram encontrados no banco de dados',
+    );
   }
 
-  const compatibility = await validateCompatibility(data.componentIds);
-
-if (!compatibility.compatible) {
-  throw new BadRequestError(
-    compatibility.errors.join('; ')
-  );
-}
+  validateCompatibility(components);
 
   const laborPrice = data.assemblyFee ?? 150;
 
   const totalComponents = components.reduce(
     (total, component) => total + component.price,
-    0
+    0,
   );
 
   const totalPrice = totalComponents + laborPrice;
@@ -76,9 +81,10 @@ if (!compatibility.compatible) {
       customerName: data.customerName,
       laborPrice,
       totalPrice,
+      userId: userId ?? null,
       items: {
-        create: components.map((component) => ({
-          componentId: component.id,
+        create: componentIds.map((componentId) => ({
+          componentId,
           quantity: 1,
         })),
       },
@@ -94,19 +100,13 @@ if (!compatibility.compatible) {
 }
 
 export async function updateBudget(
-  id: string,
-  data: UpdateBudgetInput
+  budgetId: string,
+  data: UpdateBudgetInput,
 ) {
   const budget = await prisma.budget.findUnique({
-    where: {
-      id,
-    },
+    where: { id: budgetId },
     include: {
-      items: {
-        include: {
-          component: true,
-        },
-      },
+      items: true,
     },
   });
 
@@ -114,63 +114,80 @@ export async function updateBudget(
     throw new NotFoundError('Orçamento não encontrado');
   }
 
-  let components = budget.items.map((item) => item.component);
+  const componentIds = data.componentIds;
 
-  if (data.componentIds) {
-    components = await prisma.component.findMany({
-      where: {
-        id: {
-          in: data.componentIds,
+  if (!componentIds) {
+    return prisma.budget.update({
+      where: { id: budgetId },
+      data: {
+        ...(data.customerName !== undefined && {
+          customerName: data.customerName,
+        }),
+        ...(data.assemblyFee !== undefined && {
+          laborPrice: data.assemblyFee,
+          totalPrice:
+            budget.totalPrice -
+            budget.laborPrice +
+            data.assemblyFee,
+        }),
+      },
+      include: {
+        items: {
+          include: {
+            component: true,
+          },
         },
       },
     });
-
-    if (components.length !== data.componentIds.length) {
-      throw new NotFoundError(
-        'Um ou mais componentes não foram encontrados'
-      );
-    }
   }
+
+  const components = await prisma.component.findMany({
+    where: {
+      id: { in: componentIds },
+    },
+  });
+
+  if (components.length !== componentIds.length) {
+    throw new NotFoundError(
+      'Um ou mais componentes selecionados não foram encontrados no banco de dados',
+    );
+  }
+
+  validateCompatibility(components);
 
   const laborPrice = data.assemblyFee ?? budget.laborPrice;
 
   const totalComponents = components.reduce(
     (total, component) => total + component.price,
-    0
+    0,
   );
 
   const totalPrice = totalComponents + laborPrice;
 
   return prisma.$transaction(async (tx) => {
-    if (data.componentIds) {
-      await tx.budgetItem.deleteMany({
-        where: {
-          budgetId: id,
-        },
-      });
-    }
+    await tx.budgetItem.deleteMany({
+      where: {
+        budgetId,
+      },
+    });
 
     return tx.budget.update({
       where: {
-        id,
+        id: budgetId,
       },
       data: {
-        customerName:
-          data.customerName ?? budget.customerName,
-
+        ...(data.customerName !== undefined && {
+          customerName: data.customerName,
+        }),
         laborPrice,
         totalPrice,
-
-        ...(data.componentIds && {
-          items: {
-            create: components.map((component) => ({
-              componentId: component.id,
-              quantity: 1,
-            })),
-          },
-        }),
+        items: {
+          create: componentIds.map((componentId) => ({
+            componentId,
+            quantity: 1,
+          })),
+        },
       },
-
       include: {
         items: {
           include: {
@@ -180,6 +197,58 @@ export async function updateBudget(
       },
     });
   });
+}
+
+export async function updateStatus(
+  budgetId: string,
+  data: UpdateBudgetStatusInput,
+) {
+  const budget = await prisma.budget.findUnique({
+    where: { id: budgetId },
+    include: { items: { include: { component: true } } },
+  });
+  if (!budget) throw new NotFoundError('Orçamento não encontrado');
+  if (budget.status === data.status) return budget;
+
+  return prisma.$transaction(async (tx) => {
+    const enteringApproved = budget.status === BudgetStatus.PENDING &&
+      (data.status === BudgetStatus.APPROVED || data.status === BudgetStatus.COMPLETED);
+    const canceling = (budget.status === BudgetStatus.APPROVED || budget.status === BudgetStatus.COMPLETED) &&
+      data.status === BudgetStatus.CANCELED;
+
+    for (const item of budget.items) {
+      if (enteringApproved) {
+        const component = await tx.component.findUnique({ where: { id: item.componentId } });
+        if (!component || component.stockQuantity < item.quantity) {
+          throw new OutOfStockError(`Não é possível aprovar. O componente "${item.component?.name}" ficou sem estoque suficiente.`);
+        }
+        await tx.component.update({ where: { id: item.componentId }, data: { stockQuantity: { decrement: item.quantity } } });
+      } else if (canceling) {
+        await tx.component.update({ where: { id: item.componentId }, data: { stockQuantity: { increment: item.quantity } } });
+      }
+    }
+    return tx.budget.update({
+      where: { id: budgetId }, data: { status: data.status },
+      include: { items: { include: { component: true } } },
+    });
+  });
+}
+
+function validateCompatibility(components: any[]) {
+  const cpu = components.find((component) => component.type === ComponentType.CPU);
+  const motherboard = components.find((component) => component.type === ComponentType.MOTHERBOARD);
+  const ram = components.find((component) => component.type === ComponentType.RAM);
+  const psu = components.find((component) => component.type === ComponentType.PSU);
+  if (cpu?.socket && motherboard?.socket && cpu.socket.toUpperCase() !== motherboard.socket.toUpperCase()) {
+    throw new CompatibilityError(`Incompatibilidade de Socket: o processador usa "${cpu.socket}", mas a placa-mãe suporta "${motherboard.socket}".`);
+  }
+  if (ram?.ramType && motherboard?.ramType && ram.ramType.toUpperCase() !== motherboard.ramType.toUpperCase()) {
+    throw new CompatibilityError(`Incompatibilidade de RAM: a memória é "${ram.ramType}", mas a placa-mãe exige "${motherboard.ramType}".`);
+  }
+  const power = components.reduce((total, component) => total + (component.powerDrawW || 0), 0);
+  if (psu?.powerSupplyW && psu.powerSupplyW < Math.ceil(power * 1.2)) {
+    throw new CompatibilityError(`Incompatibilidade de Fonte: são necessários ${Math.ceil(power * 1.2)}W, mas a fonte fornece ${psu.powerSupplyW}W.`);
+  }
 }
 
 export async function deleteBudget(id: string) {
