@@ -296,9 +296,17 @@ npm install
 Crie um arquivo `.env` na raiz:
 
 ```env
-API_PORT=3000
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/pcgamerdb?schema=public"
+PORT=3000
+
 JWT_SECRET="sua_chave_secreta"
+
+POSTGRES_USER="Seu_User"
+
+POSTGRES_PASSWORD="Sua_Senha"
+
+POSTGRES_PORT=5432
+
+DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/pcgamerdb?schema=public"
 ```
 
 > Não versione o `.env`. Utilize um `.env.example` para documentar as variáveis necessárias.
