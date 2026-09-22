@@ -1,4 +1,4 @@
-# 🖥️ PC Builder & Compatibility API
+# 🖥️ PC Builder API
 
 > API RESTful desenvolvida em Node.js e TypeScript para simulação, cálculo dinâmico e montagem de PC Gamers personalizados, com verificação de compatibilidade entre componentes de hardware.
 
