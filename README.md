@@ -309,8 +309,6 @@ POSTGRES_PORT=5432
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/pcgamerdb?schema=public"
 ```
 
-> Não versione o `.env`. Utilize um `.env.example` para documentar as variáveis necessárias.
-
 ### 4. Suba o PostgreSQL
 
 ```bash
