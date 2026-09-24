@@ -8,7 +8,9 @@ import {
   deleteComponent,
 } from '../services/component.service';
 
-import { createComponentSchema,updateComponentSchema} from '../schemas/budget.schema';
+import { createComponentSchema,
+         updateComponentSchema
+} from '../schemas/component.schema';
 
 export async function getComponents(
   _req: Request,
