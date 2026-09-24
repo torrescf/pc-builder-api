@@ -8,6 +8,7 @@ import {
   NotFoundError,
   OutOfStockError,
   CompatibilityError,
+  BadRequestError,
 } from '../helpers/api-errors';
 import { ComponentType, BudgetStatus } from '@prisma/client';
 
@@ -220,21 +221,51 @@ export async function updateStatus(
     include: { items: { include: { component: true } } },
   });
   if (!budget) throw new NotFoundError('Orçamento não encontrado');
+
   if (budget.status === data.status) return budget;
 
+  const validTransition =
+  (budget.status === BudgetStatus.PENDING &&
+    (data.status === BudgetStatus.APPROVED ||
+      data.status === BudgetStatus.CANCELED)) ||
+  (budget.status === BudgetStatus.APPROVED &&
+    (data.status === BudgetStatus.COMPLETED ||
+      data.status === BudgetStatus.CANCELED));
+
+if (!validTransition) {
+  throw new BadRequestError(
+    `Não é possível alterar o status de ${budget.status} para ${data.status}`,
+  );
+}
+
   return prisma.$transaction(async (tx) => {
-    const enteringApproved = budget.status === BudgetStatus.PENDING &&
-      (data.status === BudgetStatus.APPROVED || data.status === BudgetStatus.COMPLETED);
-    const canceling = (budget.status === BudgetStatus.APPROVED || budget.status === BudgetStatus.COMPLETED) &&
-      data.status === BudgetStatus.CANCELED;
+    const enteringApproved =
+    budget.status === BudgetStatus.PENDING && data.status === BudgetStatus.APPROVED;
+    const canceling =
+  budget.status === BudgetStatus.APPROVED &&
+  data.status === BudgetStatus.CANCELED;
 
     for (const item of budget.items) {
       if (enteringApproved) {
-        const component = await tx.component.findUnique({ where: { id: item.componentId } });
-        if (!component || component.stockQuantity < item.quantity) {
-          throw new OutOfStockError(`Não é possível aprovar. O componente "${item.component?.name}" ficou sem estoque suficiente.`);
-        }
-        await tx.component.update({ where: { id: item.componentId }, data: { stockQuantity: { decrement: item.quantity } } });
+const updatedComponent = await tx.component.updateMany({
+  where: {
+    id: item.componentId,
+    stockQuantity: {
+      gte: item.quantity,
+    },
+  },
+  data: {
+    stockQuantity: {
+      decrement: item.quantity,
+    },
+  },
+});
+
+if (updatedComponent.count === 0) {
+  throw new OutOfStockError(
+    `Não é possível aprovar. O componente "${item.component?.name}" ficou sem estoque suficiente.`,
+  );
+}  
       } else if (canceling) {
         await tx.component.update({ where: { id: item.componentId }, data: { stockQuantity: { increment: item.quantity } } });
       }

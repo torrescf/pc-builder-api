@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { NotFoundError } from '../helpers/api-errors';
+import { NotFoundError, BadRequestError } from '../helpers/api-errors';
 import type { CreateComponentInput,UpdateComponentInput } from '../schemas/component.schema';
 
 export async function getAllComponents() {
@@ -70,7 +70,17 @@ export async function deleteComponent(id: string) {
   if (!component) {
     throw new NotFoundError('Componente não encontrado');
   }
+  const budgetItem = await prisma.budgetItem.findFirst({
+    where: {
+      componentId: id,
+    },
+  });
 
+  if (budgetItem) {
+    throw new BadRequestError(
+      'Não é possível excluir um componente que está associado a um orçamento',
+    );
+  }
   await prisma.component.delete({
     where: {
       id,
