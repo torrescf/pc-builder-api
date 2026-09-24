@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { NotFoundError } from '../helpers/api-errors';
-import type { CreateComponentInput,UpdateComponentInput } from '../schemas/budget.schema';
+import type { CreateComponentInput,UpdateComponentInput } from '../schemas/component.schema';
 
 export async function getAllComponents() {
   return prisma.component.findMany({

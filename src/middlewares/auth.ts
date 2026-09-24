@@ -60,7 +60,7 @@ export function authMiddleware(
 		req.user = { id: payload.id, role: payload.role };
 		next();
 	} catch {
-		throw new ForbiddenError('Token inválido ou expirado');
+		throw new UnauthorizedError('Token inválido ou expirado');
 	}
 }
 export function roleMiddleware(

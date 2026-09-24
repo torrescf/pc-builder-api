@@ -9,14 +9,20 @@ export const createBudgetSchema = z.object({
     .optional(),
 });
 
-export const updateBudgetSchema = z.object({
-  componentIds: z.array(z.string()).min(1).optional(),
+export const updateBudgetSchema = z
+  .object({
+    componentIds: z.array(z.string()).min(1).optional(),
 
-  assemblyFee: z
-    .number()
-    .nonnegative()
-    .optional(),
-});
+    assemblyFee: z.number().nonnegative().optional(),
+  })
+  .refine(
+    (data) =>
+      data.componentIds !== undefined ||
+      data.assemblyFee !== undefined,
+    {
+      message: 'Informe pelo menos um campo para atualizar',
+    },
+  );
 
 export const updateBudgetStatusSchema = z.object({
   status: z.enum([
