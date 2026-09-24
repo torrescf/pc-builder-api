@@ -6,11 +6,13 @@ import {
   createBudget,
   updateBudget,
   deleteBudget,
+  updateStatus,
 } from '../services/budget.service';
 
 import {
   createBudgetSchema,
   updateBudgetSchema,
+  updateBudgetStatusSchema,
 } from '../schemas/budget.schema';
 
 export async function getBudgets(
@@ -73,4 +75,20 @@ export async function deleteBudgetController(
   await deleteBudget(id, req.user!.id);
 
   return res.status(204).send();
+}
+
+export async function updateBudgetStatusController(
+  req: Request,
+  res: Response
+) {
+  const { id } = req.params;
+
+  const data = updateBudgetStatusSchema.parse(req.body);
+
+  const budget = await updateStatus(
+    id,
+    data,
+  );
+
+  return res.json(budget);
 }
